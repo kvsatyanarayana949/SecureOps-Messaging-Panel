@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  messaging-panel:
+    build:
+      context: .
+
+    ports:
+      - "5000:5000"
+
+    networks:
+      - secureops
+
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+      MYSQL_DB: devops
+      MYSQL_CURSORCLASS: DictCursor
+      SECRET_KEY: dev-secret
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    restart: always
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -q http://localhost:5000 || exit 1"]
+      start_period: 60s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+
+  mysql:
+    image: mysql:8.0
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql
+
+    networks:
+      - secureops
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: devops
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+
+    restart: always
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      start_period: 60s
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+
+volumes:
+  mysql-data:
+
+networks:
+  secureops:
